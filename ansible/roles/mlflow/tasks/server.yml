@@ -1,0 +1,60 @@
+- name: MLFLOW | SERVER | Create server folder
+  ansible.builtin.file:
+    path: "{{ mlflow_project_folder }}/server"
+    state: directory
+    mode: "0750"
+    owner: "{{ mlflow_user }}"
+    group: "{{ mlflow_group }}"
+
+- name: MLFLOW | SERVER | Copy Dockerfile to project folder
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: "{{ mlflow_project_folder }}/server/Dockerfile"
+    mode: "0640"
+    owner: "{{ mlflow_user }}"
+    group: "{{ mlflow_group }}"
+
+- name: MLFLOW | SERVER | Build tracking-server image
+  community.docker.docker_image:
+    name: mlflow-tracking-server
+    source: build
+    build:
+      path: "{{ mlflow_project_folder }}/server/"
+      args:
+        MLFLOW_VERSION: "{{ mlflow_server_version }}"
+
+- name: MLFLOW | SERVER | Run tracking-server
+  community.docker.docker_container:
+    name: mlflow-server
+    image: mlflow-tracking-server
+    restart_policy: unless-stopped
+    env:
+      MLFLOW_S3_ENDPOINT_URL: http://mlflow-s3:9000
+      MLFLOW_S3_IGNORE_TLS: "true"
+      S3_BUCKET_NAME: "{{ mlflow_s3_bucket_name }}"
+      AWS_ACCESS_KEY_ID: "{{ mlflow_s3_access_key_id }}"
+      AWS_SECRET_ACCESS_KEY: "{{ mlflow_s3_secret_access_key }}"
+      POSTGRES_DB: "{{ mlflow_db_name }}"
+      POSTGRES_USER: "{{ mlflow_db_user }}"
+      POSTGRES_PASSWORD: "{{ mlflow_db_password }}"
+    command: >
+      /bin/sh -c 'mlflow server
+      --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-db:5432/${POSTGRES_DB}
+      --serve-artifacts
+      --artifacts-destination s3://${S3_BUCKET_NAME}
+      --host 0.0.0.0
+      --static-prefix=/mlflow'
+    networks:
+      - name: mlflow-backend
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.mlflow.rule: "Host(`{{ inventory_hostname }}`)  && Path(`/mlflow`)"
+      traefik.http.routers.mlflow.entrypoints: web
+      traefik.http.middlewares.mlflow-api-strip.replacepathregex.regex: ^/mlflow/api/(.*)
+      traefik.http.middlewares.mlflow-api-strip.replacepathregex.replacement: /api/$1
+      traefik.http.routers.mlflow.middlewares: mlflow-api-strip@docker
+    healthcheck:
+      test: ["CMD", "python", "-c", 'import requests; requests.get("http://localhost:5000/")']
+      interval: 30s
+      timeout: 10s
+      retries: 3

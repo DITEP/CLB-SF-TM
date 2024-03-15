@@ -1,0 +1,12 @@
+# Init
+mlflow_project_folder: /opt/mlflow
+mlflow_user: root
+mlflow_group: root
+
+# Database
+mlflow_db_user: postgres
+mlflow_db_name: mlflow
+
+# S3
+mlflow_s3_access_key_id: minio
+mlflow_s3_bucket_name: mlflow

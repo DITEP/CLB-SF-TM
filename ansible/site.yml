@@ -1,0 +1,5 @@
+- name: Install mlflow
+  hosts: mlflow
+  roles:
+    - common
+    - mlflow

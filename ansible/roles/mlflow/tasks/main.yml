@@ -1,0 +1,15 @@
+- name: MLFLOW | INIT | Init project
+  ansible.builtin.import_tasks: init.yml
+  tags: ["mlflow-init"]
+
+- name: MLFLOW | DB | Setup postgres
+  ansible.builtin.import_tasks: database.yml
+  tags: ["mlflow-db"]
+
+- name: MLFLOW | S3 | Setup S3 (minio)
+  ansible.builtin.import_tasks: s3.yml
+  tags: ["mlflow-s3"]
+
+- name: MLFLOW | SERVER | Setup tracking-server
+  ansible.builtin.import_tasks: server.yml
+  tags: ["mlflow-server"]

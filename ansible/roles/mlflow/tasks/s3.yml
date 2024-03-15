@@ -1,0 +1,41 @@
+- name: MLFLOW | S3 | Run minio docker
+  community.docker.docker_container:
+    name: mlflow-s3
+    image: minio/minio:{{ mlflow_s3_version }}
+    restart_policy: unless-stopped
+    env:
+      MINIO_ROOT_USER: "{{ mlflow_s3_access_key_id }}"
+      MINIO_ROOT_PASSWORD: "{{ mlflow_s3_secret_access_key }}"
+      MINIO_STORAGE_USE_HTTPS: "False"
+    command: server --console-address ":9001" /data
+    volumes:
+      - "{{ mlflow_project_folder }}/s3/data:/data"
+    networks:
+      - name: mlflow-backend
+
+- name: MLFLOW | S3 | Copy wait-for-it script to remote host
+  ansible.builtin.copy:
+    src: wait-for-it.sh
+    dest: "{{ mlflow_project_folder }}/s3/wait-for-it.sh"
+    mode: "0644"
+    owner: "{{ mlflow_user }}"
+    group: "{{ mlflow_group }}"
+
+- name: MLFLOW | S3 | Create bucket {{ mlflow_s3_bucket_name }}
+  community.docker.docker_container:
+    name: mlflow-s3-bucket-create
+    image: minio/mc
+    env:
+      MINIO_ROOT_USER: "{{ mlflow_s3_access_key_id }}"
+      MINIO_ROOT_PASSWORD: "{{ mlflow_s3_secret_access_key }}"
+      MLFLOW_S3_BUCKET_NAME: "{{ mlflow_s3_bucket_name }}"
+    entrypoint: ['/bin/sh']
+    command: >
+      -c "/tmp/wait-for-it.sh &&
+      mc alias set minio http://mlflow-s3:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
+      mc mb minio/${MLFLOW_S3_BUCKET_NAME}"
+    networks:
+      - name: mlflow-backend
+    auto_remove: true
+    volumes:
+      - "{{ mlflow_project_folder }}/s3/wait-for-it.sh:/tmp/wait-for-it.sh"

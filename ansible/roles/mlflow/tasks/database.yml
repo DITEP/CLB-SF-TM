@@ -1,0 +1,13 @@
+- name: MLFLOW | DOCKER | Run postgres docker
+  community.docker.docker_container:
+    name: mlflow-db
+    image: postgres:{{ mlflow_db_version }}
+    restart_policy: unless-stopped
+    env:
+      POSTGRES_DB: "{{ mlflow_db_name }}"
+      POSTGRES_USER: "{{ mlflow_db_user }}"
+      POSTGRES_PASSWORD: "{{ mlflow_db_password }}"
+    volumes:
+      - "{{ mlflow_project_folder }}/db/data:/var/lib/postgresql/data"
+    networks:
+      - name: mlflow-backend

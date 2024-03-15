@@ -1,0 +1,22 @@
+- name: COMMON | DOCKER | Install Docker
+  ansible.builtin.import_tasks: docker.yml
+  tags: ["docker"]
+
+- name: COMMON | TRAEFIK | Deploy traefik RP
+  community.docker.docker_container:
+    image: traefik:v2.6
+    name: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    command:
+      - "--log.level=INFO"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  tags: ["traefik"]

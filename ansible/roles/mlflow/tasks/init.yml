@@ -1,0 +1,16 @@
+- name: MLFLOW | INIT | Ensure exists mlflow user {{ mlflow_user }}
+  ansible.builtin.user:
+    user: "{{ mlflow_user }}"
+    group: "{{ mlflow_group }}"
+
+- name: MLFLOW | INIT | Create project folder
+  ansible.builtin.file:
+    name: "{{ mlflow_project_folder }}"
+    state: directory
+    mode: "0750"
+    owner: "{{ mlflow_user }}"
+    group: "{{ mlflow_group }}"
+
+- name: MLFLOW | INIT | Create docker networks
+  community.docker.docker_network:
+    name: mlflow-backend

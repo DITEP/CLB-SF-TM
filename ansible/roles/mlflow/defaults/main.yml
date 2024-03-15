@@ -1,0 +1,10 @@
+# Database
+mlflow_db_password: defaultpass_TO_OVERRIDE
+mlflow_db_version: 16.2
+
+# S3
+mlflow_s3_secret_access_key: defaultkey_TO_OVERRIDE
+mlflow_s3_version: RELEASE.2024-03-10T02-53-48Z
+
+# Server
+mlflow_server_version: 2.11.1
